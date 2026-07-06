@@ -396,10 +396,14 @@
           <label>Nom du client <span class="required-star">*</span></label>
           <input type="text" id="clientNom" placeholder="Ex : Zoeller Environnement">
         </div>
+        <div class="field">
+          <label>Nom du chauffeur</label>
+          <input type="text" id="chauffeurNom" placeholder="Ex : Jean Dupont">
+        </div>
         <div class="row2">
           <div class="field">
-            <label>N° client</label>
-            <input type="text" id="clientNum" class="mono-input" placeholder="Ex : CL-00456">
+            <label>Téléphone client</label>
+            <input type="tel" id="clientNum" class="mono-input" placeholder="Ex : 06 12 34 56 78">
           </div>
           <div class="field">
             <label>Immatriculation</label>
@@ -408,7 +412,7 @@
         </div>
         <div class="field">
           <label>Numéro de série</label>
-          <input type="text" id="numSerie" class="mono-input" placeholder="Ex : VF6XXXXXXXXXXXXXX">
+          <input type="text" id="numSerie" class="mono-input" placeholder="Ex : SEMAT 24-00123">
         </div>
         <div class="field">
           <label>Adresse e-mail du client</label>
@@ -747,6 +751,7 @@ document.getElementById('printBtn').addEventListener('click', async ()=>{
 document.getElementById('resetBtn').addEventListener('click', ()=>{
   if(!confirm('Effacer toutes les données de cette fiche et repartir sur une fiche vierge ?')) return;
   document.getElementById('clientNom').value = '';
+  document.getElementById('chauffeurNom').value = '';
   document.getElementById('clientNum').value = '';
   document.getElementById('immat').value = '';
   document.getElementById('numSerie').value = '';
