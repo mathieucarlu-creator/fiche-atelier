@@ -492,17 +492,35 @@
       </div>
     </section>
 
-    <!-- 07 SIGNATURE -->
+    <!-- 07 SIGNATURE CLIENT -->
     <section class="block">
       <div class="block-head"><span class="num">07</span><h2>Signature client</h2></div>
       <div class="block-body">
         <p class="consent">Le client certifie avoir été informé des travaux à réaliser et de l'état du véhicule constaté à l'entrée de l'atelier.</p>
-        <div class="sig-wrap" id="sigWrap">
-          <canvas id="sigCanvas"></canvas>
+        <div class="sig-wrap" id="sigWrapClient">
+          <canvas id="sigCanvasClient"></canvas>
           <div class="sig-placeholder">Signer ici</div>
         </div>
         <div class="btn-row">
-          <button type="button" class="btn-outline danger" id="clearSig">Effacer la signature</button>
+          <button type="button" class="btn-outline danger" id="clearSigClient">Effacer la signature</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 08 SIGNATURE REDACTEUR -->
+    <section class="block">
+      <div class="block-head"><span class="num">08</span><h2>Signature du rédacteur</h2></div>
+      <div class="block-body">
+        <div class="field">
+          <label>Nom du rédacteur</label>
+          <input type="text" id="redacteurNom" placeholder="Ex : Marc Petit">
+        </div>
+        <div class="sig-wrap" id="sigWrapRedacteur">
+          <canvas id="sigCanvasRedacteur"></canvas>
+          <div class="sig-placeholder">Signer ici</div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn-outline danger" id="clearSigRedacteur">Effacer la signature</button>
         </div>
       </div>
     </section>
@@ -630,60 +648,65 @@ photoLabels.forEach((label, i)=>{
   });
 });
 
-// ---------- Signature pad ----------
-const sigCanvas = document.getElementById('sigCanvas');
-const sigWrap = document.getElementById('sigWrap');
-const sctx = sigCanvas.getContext('2d');
-let drawing = false;
-let lastPt = null;
+// ---------- Signature pad (fabrique réutilisable pour plusieurs pads) ----------
+function createSignaturePad(canvasId, wrapId, clearBtnId){
+  const canvas = document.getElementById(canvasId);
+  const wrap = document.getElementById(wrapId);
+  const ctx = canvas.getContext('2d');
+  let drawing = false;
+  let lastPt = null;
 
-function resizeSigCanvas(){
-  const rect = sigWrap.getBoundingClientRect();
-  const ratio = window.devicePixelRatio || 1;
-  sigCanvas.width = rect.width * ratio;
-  sigCanvas.height = 160 * ratio;
-  sctx.scale(ratio, ratio);
-  sctx.lineWidth = 2.2;
-  sctx.lineCap = 'round';
-  sctx.strokeStyle = '#1B1B1D';
-}
-resizeSigCanvas();
-window.addEventListener('resize', ()=>{
-  const data = sigCanvas.toDataURL();
-  resizeSigCanvas();
-});
+  function resize(){
+    const rect = wrap.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = rect.width * ratio;
+    canvas.height = 160 * ratio;
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#1B1B1D';
+  }
+  resize();
+  window.addEventListener('resize', resize);
 
-function getPos(e){
-  const rect = sigCanvas.getBoundingClientRect();
-  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-}
-function startDraw(e){
-  e.preventDefault();
-  drawing = true;
-  lastPt = getPos(e);
-  sigWrap.classList.add('has-ink');
-}
-function moveDraw(e){
-  if(!drawing) return;
-  e.preventDefault();
-  const p = getPos(e);
-  sctx.beginPath();
-  sctx.moveTo(lastPt.x, lastPt.y);
-  sctx.lineTo(p.x, p.y);
-  sctx.stroke();
-  lastPt = p;
-}
-function endDraw(){ drawing = false; }
+  function getPos(e){
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  function startDraw(e){
+    e.preventDefault();
+    drawing = true;
+    lastPt = getPos(e);
+    wrap.classList.add('has-ink');
+  }
+  function moveDraw(e){
+    if(!drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(lastPt.x, lastPt.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    lastPt = p;
+  }
+  function endDraw(){ drawing = false; }
 
-sigCanvas.addEventListener('pointerdown', startDraw);
-sigCanvas.addEventListener('pointermove', moveDraw);
-window.addEventListener('pointerup', endDraw);
-sigCanvas.addEventListener('pointercancel', endDraw);
+  canvas.addEventListener('pointerdown', startDraw);
+  canvas.addEventListener('pointermove', moveDraw);
+  window.addEventListener('pointerup', endDraw);
+  canvas.addEventListener('pointercancel', endDraw);
 
-document.getElementById('clearSig').addEventListener('click', ()=>{
-  sctx.clearRect(0,0,sigCanvas.width, sigCanvas.height);
-  sigWrap.classList.remove('has-ink');
-});
+  document.getElementById(clearBtnId).addEventListener('click', ()=>{
+    ctx.clearRect(0,0,canvas.width, canvas.height);
+    wrap.classList.remove('has-ink');
+  });
+
+  return {
+    clear: ()=>{ ctx.clearRect(0,0,canvas.width, canvas.height); wrap.classList.remove('has-ink'); }
+  };
+}
+const sigPadClient = createSignaturePad('sigCanvasClient', 'sigWrapClient', 'clearSigClient');
+const sigPadRedacteur = createSignaturePad('sigCanvasRedacteur', 'sigWrapRedacteur', 'clearSigRedacteur');
 
 // ---------- Générer un PDF (fonctionne même dans les aperçus in-app) ----------
 document.getElementById('printBtn').addEventListener('click', async ()=>{
@@ -756,14 +779,15 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   document.getElementById('immat').value = '';
   document.getElementById('numSerie').value = '';
   document.getElementById('clientMail').value = '';
+  document.getElementById('redacteurNom').value = '';
   document.getElementById('heuresMoteur').value = '';
   document.getElementById('heuresPTO').value = '';
   document.getElementById('travaux').value = '';
   segBtns.forEach(b=>b.classList.remove('active'));
   marks = [];
   redrawMarks();
-  sctx.clearRect(0,0,sigCanvas.width, sigCanvas.height);
-  sigWrap.classList.remove('has-ink');
+  sigPadClient.clear();
+  sigPadRedacteur.clear();
   photoLabels.forEach((label,i)=>{
     const slot = document.getElementById('slot'+i);
     slot.className = 'photo-slot empty';
