@@ -161,6 +161,9 @@
   textarea{resize:vertical;min-height:88px;font-size:14.5px;line-height:1.45;}
 
   .segmented{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .segmented-5{grid-template-columns:repeat(5,1fr);gap:6px;}
+  .segmented-5 .seg-btn{padding:10px 4px;font-size:14px;}
+  .segmented-5 .seg-btn.active{background:var(--steel);border-color:var(--steel);color:#fff;}
   .seg-btn{
     border:1.5px solid var(--line);
     background:var(--paper);
@@ -441,6 +444,26 @@
             </div>
           </div>
         </div>
+        <div class="field">
+          <label>Niveau carburant</label>
+          <div class="segmented segmented-5" id="carburantSeg">
+            <button type="button" class="seg-btn" data-level="R">R</button>
+            <button type="button" class="seg-btn" data-level="1/4">1/4</button>
+            <button type="button" class="seg-btn" data-level="1/2">1/2</button>
+            <button type="button" class="seg-btn" data-level="3/4">3/4</button>
+            <button type="button" class="seg-btn" data-level="P">P</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Niveau AdBlue</label>
+          <div class="segmented segmented-5" id="adblueSeg">
+            <button type="button" class="seg-btn" data-level="R">R</button>
+            <button type="button" class="seg-btn" data-level="1/4">1/4</button>
+            <button type="button" class="seg-btn" data-level="1/2">1/2</button>
+            <button type="button" class="seg-btn" data-level="3/4">3/4</button>
+            <button type="button" class="seg-btn" data-level="P">P</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -558,6 +581,20 @@ segBtns.forEach(btn=>{
     btn.classList.add('active');
   });
 });
+
+// ---------- Jauges carburant / AdBlue (même logique, groupes distincts) ----------
+function setupSegmentGroup(containerId){
+  const btns = document.querySelectorAll('#'+containerId+' .seg-btn');
+  btns.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      btns.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  return btns;
+}
+const carburantBtns = setupSegmentGroup('carburantSeg');
+const adblueBtns = setupSegmentGroup('adblueSeg');
 
 // ---------- Diagram marking canvas ----------
 const diagramWrap = document.getElementById('diagramWrap');
@@ -711,6 +748,13 @@ const sigPadRedacteur = createSignaturePad('sigCanvasRedacteur', 'sigWrapRedacte
 // ---------- Générer un PDF (fonctionne même dans les aperçus in-app) ----------
 document.getElementById('printBtn').addEventListener('click', async ()=>{
   const btn = document.getElementById('printBtn');
+
+  // Pas de réseau / librairies non chargées -> on retombe sur l'impression native (fonctionne hors-ligne)
+  if(typeof html2canvas === 'undefined' || !window.jspdf){
+    window.print();
+    return;
+  }
+
   const originalLabel = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Génération du PDF...';
@@ -784,6 +828,8 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   document.getElementById('heuresPTO').value = '';
   document.getElementById('travaux').value = '';
   segBtns.forEach(b=>b.classList.remove('active'));
+  carburantBtns.forEach(b=>b.classList.remove('active'));
+  adblueBtns.forEach(b=>b.classList.remove('active'));
   marks = [];
   redrawMarks();
   sigPadClient.clear();
