@@ -593,6 +593,15 @@
         <div class="photo-grid" id="photoGrid">
           <!-- 4 slots injected by JS -->
         </div>
+        <div class="field" style="margin-top:14px;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="extraPhotosCheck">
+            <span>Ajouter des photos supplémentaires (4 photos)</span>
+          </label>
+        </div>
+        <div class="photo-grid" id="extraPhotoGrid" style="display:none; margin-top:14px;">
+          <!-- 4 extra slots injected by JS -->
+        </div>
       </div>
     </section>
 
@@ -761,21 +770,8 @@ document.getElementById('clearMarks').addEventListener('click', ()=>{
   redrawMarks();
 });
 
-// ---------- Photo slots ----------
-const photoLabels = ['Photo 1','Photo 2','Photo 3','Photo 4'];
-const photoGrid = document.getElementById('photoGrid');
-photoLabels.forEach((label, i)=>{
-  const slot = document.createElement('label');
-  slot.className = 'photo-slot empty';
-  slot.id = 'slot'+i;
-  slot.innerHTML = `
-    <span class="photo-label">${label}</span>
-    <span class="cam-icon">&#128247;</span>
-    <span>Ajouter</span>
-    <input type="file" accept="image/*" capture="environment" id="input${i}">
-  `;
-  photoGrid.appendChild(slot);
-
+// ---------- Photo slots (fabrique réutilisable pour plusieurs grilles) ----------
+function bindPhotoInput(slot, label){
   const input = slot.querySelector('input');
   input.addEventListener('change', (e)=>{
     const file = e.target.files[0];
@@ -787,20 +783,42 @@ photoLabels.forEach((label, i)=>{
         <span class="photo-label">${label}</span>
         <img src="${ev.target.result}">
         <span class="retake">Reprendre</span>
-        <input type="file" accept="image/*" capture="environment" id="input${i}">
+        <input type="file" accept="image/*" capture="environment">
       `;
       // re-bind change listener on the fresh input (old input node was replaced via innerHTML)
-      const newInput = slot.querySelector('input');
-      newInput.addEventListener('change', (e2)=>{
-        const f2 = e2.target.files[0];
-        if(!f2) return;
-        const r2 = new FileReader();
-        r2.onload = (ev2)=>{ slot.querySelector('img').src = ev2.target.result; };
-        r2.readAsDataURL(f2);
-      });
+      bindPhotoInput(slot, label);
     };
     reader.readAsDataURL(file);
   });
+}
+function buildPhotoGrid(gridEl, labels, idPrefix){
+  gridEl.innerHTML = '';
+  labels.forEach((label, i)=>{
+    const slot = document.createElement('label');
+    slot.className = 'photo-slot empty';
+    slot.id = idPrefix + i;
+    slot.innerHTML = `
+      <span class="photo-label">${label}</span>
+      <span class="cam-icon">&#128247;</span>
+      <span>Ajouter</span>
+      <input type="file" accept="image/*" capture="environment">
+    `;
+    gridEl.appendChild(slot);
+    bindPhotoInput(slot, label);
+  });
+}
+
+const photoLabels = ['Photo 1','Photo 2','Photo 3','Photo 4'];
+const photoGrid = document.getElementById('photoGrid');
+buildPhotoGrid(photoGrid, photoLabels, 'slot');
+
+const extraPhotoLabels = ['Photo 5','Photo 6','Photo 7','Photo 8'];
+const extraPhotoGrid = document.getElementById('extraPhotoGrid');
+buildPhotoGrid(extraPhotoGrid, extraPhotoLabels, 'slotExtra');
+
+const extraPhotosCheck = document.getElementById('extraPhotosCheck');
+extraPhotosCheck.addEventListener('change', ()=>{
+  extraPhotoGrid.style.display = extraPhotosCheck.checked ? 'grid' : 'none';
 });
 
 // ---------- Signature pad (fabrique réutilisable pour plusieurs pads) ----------
@@ -957,29 +975,10 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   redrawMarks();
   sigPadClient.clear();
   sigPadRedacteur.clear();
-  photoLabels.forEach((label,i)=>{
-    const slot = document.getElementById('slot'+i);
-    slot.className = 'photo-slot empty';
-    slot.innerHTML = `
-      <span class="photo-label">${label}</span>
-      <span class="cam-icon">&#128247;</span>
-      <span>Ajouter</span>
-      <input type="file" accept="image/*" capture="environment" id="input${i}">
-    `;
-    const input = slot.querySelector('input');
-    input.addEventListener('change', (e)=>{
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev)=>{
-        slot.classList.remove('empty');
-        const img = document.createElement('img');
-        img.src = ev.target.result;
-        slot.appendChild(img);
-      };
-      reader.readAsDataURL(file);
-    });
-  });
+  buildPhotoGrid(photoGrid, photoLabels, 'slot');
+  buildPhotoGrid(extraPhotoGrid, extraPhotoLabels, 'slotExtra');
+  extraPhotosCheck.checked = false;
+  extraPhotoGrid.style.display = 'none';
   modeSelect.value = 'entree';
   applyMode();
   setToday();
