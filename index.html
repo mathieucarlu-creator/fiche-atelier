@@ -163,6 +163,24 @@
   }
   .field{margin-bottom:14px;}
   .field:last-child{margin-bottom:0;}
+  .checkbox-label{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    font-size:14px;
+    font-weight:500;
+    text-transform:none;
+    letter-spacing:normal;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .checkbox-label input[type="checkbox"]{
+    width:18px;
+    height:18px;
+    accent-color:var(--amber);
+    flex-shrink:0;
+    cursor:pointer;
+  }
   input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="number"], textarea{
     width:100%;
     border:1.5px solid var(--line);
@@ -446,6 +464,16 @@
           <label>Nom du chauffeur</label>
           <input type="text" id="chauffeurNom" placeholder="Ex : Jean Dupont">
         </div>
+        <div class="field">
+          <label class="checkbox-label">
+            <input type="checkbox" id="convoyeurCheck">
+            <span>Déposé par un convoyeur (pas le client)</span>
+          </label>
+        </div>
+        <div class="field" id="convoyeurNomField" style="display:none;">
+          <label>Nom du convoyeur</label>
+          <input type="text" id="convoyeurNom" placeholder="Ex : Société de convoyage XYZ">
+        </div>
         <div class="row2">
           <div class="field">
             <label>Téléphone client</label>
@@ -652,6 +680,16 @@ function applyMode(){
   setFicheRef();
 }
 modeSelect.addEventListener('change', applyMode);
+
+// ---------- Convoyeur (véhicule déposé par un tiers) ----------
+const convoyeurCheck = document.getElementById('convoyeurCheck');
+const convoyeurNomField = document.getElementById('convoyeurNomField');
+convoyeurCheck.addEventListener('change', ()=>{
+  convoyeurNomField.style.display = convoyeurCheck.checked ? 'block' : 'none';
+  if(!convoyeurCheck.checked){
+    document.getElementById('convoyeurNom').value = '';
+  }
+});
 
 // ---------- État segmented control ----------
 const segBtns = document.querySelectorAll('#etatSeg .seg-btn');
@@ -900,6 +938,9 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   if(!confirm('Effacer toutes les données de cette fiche et repartir sur une fiche vierge ?')) return;
   document.getElementById('clientNom').value = '';
   document.getElementById('chauffeurNom').value = '';
+  convoyeurCheck.checked = false;
+  convoyeurNomField.style.display = 'none';
+  document.getElementById('convoyeurNom').value = '';
   document.getElementById('clientNum').value = '';
   document.getElementById('immat').value = '';
   document.getElementById('numSerie').value = '';
